@@ -1,5 +1,5 @@
 package net.sidewayssky
-
+const val boardSize = 8
 enum class PieceType {
     KING, QUEEN, ROOK, BISHOP, KNIGHT, PAWN
 }
@@ -19,7 +19,7 @@ fun getLegalMoves(piece: ChessPiece, allPieces: List<ChessPiece>): Set<Position>
     when (piece.type) {
         PieceType.PAWN -> {
             val direction = if (piece.color == PieceColor.WHITE) -1 else 1
-            val startRow = if (piece.color == PieceColor.WHITE) 6 else 1
+            val startRow = if (piece.color == PieceColor.WHITE) (boardSize - 2) else 1
 
             // Move forward one square
             val oneForward = Position(currentPos.row + direction, currentPos.col)
@@ -133,7 +133,7 @@ fun addDirectionalMoves(directions:  List<Pair<Int, Int>>, from: Position, color
 }
 
 fun isInBounds(pos: Position): Boolean {
-    return pos.row in 0..7 && pos.col in 0..7
+    return pos.row in 0..<boardSize && pos.col in 0..<boardSize
 }
 
 fun isOccupied(pos: Position, allPieces: List<ChessPiece>): Boolean {

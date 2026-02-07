@@ -25,13 +25,6 @@ import org.jetbrains.compose.resources.DrawableResource
 
 @Composable
 fun ChessBoard() {
-    val boardSize = 8
-    val squareSize = 80.dp
-
-    // Get density to convert dp to pixels
-    val density = LocalDensity.current
-    val squareSizePx = with(density) { squareSize.toPx() }
-
     // Initialize pieces in starting positions
     var pieces by remember { mutableStateOf(getInitialPieces()) }
     var draggedPiece by remember { mutableStateOf<ChessPiece?>(null) }
@@ -39,13 +32,20 @@ fun ChessBoard() {
     var legalMoves by remember { mutableStateOf<Set<Position>>(emptySet()) }
     var currentTurn by remember { mutableStateOf(PieceColor.WHITE) }
 
-    Box(
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF383f45))
             .padding(40.dp),
         contentAlignment = Alignment.Center
     ) {
+        // Calculate square size based on available width and height
+        val maxBoardSize = minOf(maxWidth, maxHeight)
+        val squareSize = maxBoardSize / boardSize
+
+        // Get density to convert dp to pixels
+        val density = LocalDensity.current
+        val squareSizePx = with(density) { squareSize.toPx() }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 "Chess Board - ${if (currentTurn == PieceColor.WHITE) "White" else "Black"}'s Turn",
@@ -149,7 +149,7 @@ fun ChessBoard() {
 
 val lightSquare = Color(0xFFABB2B9)
 val darkSquare = Color(0xFF2C3E50)
-val highlightColor = Color(0xFFF4D03F)
+val highlightColor = Color(0x55F4D03F)
 
 fun DrawScope.drawChessBoard(boardSize: Int, squareSizePx: Float, legalMoves: Set<Position>) {
     for (row in 0 until boardSize) {
@@ -221,4 +221,3 @@ fun getPieceDrawableRes(piece: ChessPiece): DrawableResource {
         PieceType.PAWN -> if (piece.color == PieceColor.WHITE ) Res.drawable.wp else Res.drawable.bp
     }
 }
-
