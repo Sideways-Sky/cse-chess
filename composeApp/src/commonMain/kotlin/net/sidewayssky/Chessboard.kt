@@ -1,4 +1,4 @@
-package com.example.cse310chess.net.sidewayssky
+package net.sidewayssky
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -17,17 +17,10 @@ import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.Image
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.unit.Dp
 import kotlin.math.floor
 
-//import cse310chess.composeapp.generated.resources.Res
-//import cse310chess.composeapp.generated.resources.chess_king
-//import cse310chess.composeapp.generated.resources.chess_queen
-//import cse310chess.composeapp.generated.resources.chess_rook
-//import cse310chess.composeapp.generated.resources.chess_bishop
-//import cse310chess.composeapp.generated.resources.chess_knight
-//import cse310chess.composeapp.generated.resources.chess_pawn
+import cse_chess.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.DrawableResource
 
 @Composable
@@ -214,21 +207,18 @@ fun ChessPieceView(
             painterResource(getPieceDrawableRes(piece)),
             contentDescription = "${piece.color} ${piece.type}",
             modifier = Modifier.fillMaxSize(),
-            colorFilter = ColorFilter.tint(
-                if (piece.color == PieceColor.WHITE) Color.White else Color.Black
-            )
         )
     }
 }
 
 fun getPieceDrawableRes(piece: ChessPiece): DrawableResource {
     return when (piece.type) {
-        PieceType.KING -> Res.drawable.chess_king
-        PieceType.QUEEN -> Res.drawable.chess_queen
-        PieceType.ROOK -> Res.drawable.chess_rook
-        PieceType.BISHOP -> Res.drawable.chess_bishop
-        PieceType.KNIGHT -> Res.drawable.chess_knight
-        PieceType.PAWN -> Res.drawable.chess_pawn
+        PieceType.KING -> if (piece.color == PieceColor.WHITE ) Res.drawable.wk else Res.drawable.bk
+        PieceType.QUEEN -> if (piece.color == PieceColor.WHITE ) Res.drawable.wq else Res.drawable.bq
+        PieceType.BISHOP -> if (piece.color == PieceColor.WHITE ) Res.drawable.wb else Res.drawable.bb
+        PieceType.KNIGHT -> if (piece.color == PieceColor.WHITE ) Res.drawable.wn else Res.drawable.bn
+        PieceType.ROOK -> if (piece.color == PieceColor.WHITE ) Res.drawable.wr else Res.drawable.br
+        PieceType.PAWN -> if (piece.color == PieceColor.WHITE ) Res.drawable.wp else Res.drawable.bp
     }
 }
 

@@ -1,4 +1,4 @@
-package com.example.cse310chess.net.sidewayssky
+package net.sidewayssky
 
 enum class PieceType {
     KING, QUEEN, ROOK, BISHOP, KNIGHT, PAWN
