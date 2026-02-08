@@ -10,7 +10,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import org.jetbrains.compose.resources.painterResource
@@ -23,35 +22,38 @@ import kotlin.math.floor
 import cse_chess.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.DrawableResource
 
+val lightSquare = Color(0xFF2A2828)
+val darkSquare = Color(0xFFE0E0E0)
+val highlightColor = Color(0x5536B6D3)
+
 @Composable
 fun ChessBoard() {
     // Initialize pieces in starting positions
-    var pieces by remember { mutableStateOf(getInitialPieces()) }
-    var draggedPiece by remember { mutableStateOf<ChessPiece?>(null) }
+    var game by remember { mutableStateOf(Chess()) }
+    var draggedPiece by remember { mutableStateOf<Chess.Piece?>(null) }
     var dragOffset by remember { mutableStateOf(Offset.Zero) }
-    var legalMoves by remember { mutableStateOf<Set<Position>>(emptySet()) }
-    var currentTurn by remember { mutableStateOf(PieceColor.WHITE) }
+    var legalMoves by remember { mutableStateOf<Set<Chess.Position>>(emptySet()) }
 
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF383f45))
-            .padding(40.dp),
+            .background(if (game.turn == Chess.Color.WHITE) Color.White else Color.Black),
         contentAlignment = Alignment.Center
     ) {
         // Calculate square size based on available width and height
         val maxBoardSize = minOf(maxWidth, maxHeight)
-        val squareSize = maxBoardSize / boardSize
+        val squareSize = maxBoardSize / (boardSize+1)
 
         // Get density to convert dp to pixels
         val density = LocalDensity.current
         val squareSizePx = with(density) { squareSize.toPx() }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                "Chess Board - ${if (currentTurn == PieceColor.WHITE) "White" else "Black"}'s Turn",
+                "${if (game.turn == Chess.Color.WHITE) "White" else "Black"}'s Turn",
                 style = MaterialTheme.typography.titleLarge,
-                color = if (currentTurn == PieceColor.WHITE) Color.White else Color.Black,
-                modifier = Modifier.padding(bottom = 20.dp)
+                color = if (game.turn == Chess.Color.WHITE) Color.Black else Color.White,
+
+                modifier = Modifier.padding(20.dp)
             )
 
             Box(
@@ -63,17 +65,14 @@ fun ChessBoard() {
                                 // Find piece at touch position
                                 val col = floor(offset.x / squareSizePx).toInt()
                                 val row = floor(offset.y / squareSizePx).toInt()
-
-                                if (row in 0..7 && col in 0..7) {
-                                    val piece = pieces.find {
-                                        it.position.row == row && it.position.col == col
-                                    }
-
+                                val pos = game.Position(row, col)
+                                if (pos.isInBounds()) {
+                                    val piece = pos.getOccupied()
                                     // Only allow dragging pieces of the current turn's color
-                                    if (piece != null && piece.color == currentTurn) {
+                                    if (piece != null && piece.color == game.turn) {
                                         draggedPiece = piece
                                         dragOffset = offset
-                                        legalMoves = getLegalMoves(piece, pieces)
+                                        legalMoves = piece.getLegalMoves()
                                     }
                                 }
                             },
@@ -86,29 +85,7 @@ fun ChessBoard() {
                                     // Calculate drop position
                                     val newCol = floor(dragOffset.x / squareSizePx).toInt()
                                     val newRow = floor(dragOffset.y / squareSizePx).toInt()
-                                    val newPosition = Position(newRow, newCol)
-
-                                    // Only move if the destination is a legal move
-                                    if (newRow in 0..7 && newCol in 0..7 && legalMoves.contains(newPosition)) {
-                                        // Remove any piece at destination
-                                        pieces = pieces.filter {
-                                            !(it.position.row == newRow && it.position.col == newCol)
-                                        }
-                                        // Update dragged piece position and mark as moved
-                                        pieces = pieces.map {
-                                            if (it == piece) {
-                                                it.copy(position = newPosition)
-                                            } else {
-                                                it
-                                            }
-                                        }
-                                        // Switch turn
-                                        currentTurn = if (currentTurn == PieceColor.WHITE) {
-                                            PieceColor.BLACK
-                                        } else {
-                                            PieceColor.WHITE
-                                        }
-                                    }
+                                    piece.tryMove(game.Position(newRow, newCol))
                                 }
                                 draggedPiece = null
                                 dragOffset = Offset.Zero
@@ -123,10 +100,30 @@ fun ChessBoard() {
                     }
             ) {
                 Canvas(modifier = Modifier.fillMaxSize()) {
-                    drawChessBoard(boardSize, squareSizePx, legalMoves)
+                    for (row in 0 until boardSize) {
+                        for (col in 0 until boardSize) {
+                            val isLight = (row + col) % 2 == 0
+                            val color = if (isLight) lightSquare else darkSquare
+
+                            drawRect(
+                                color = color,
+                                topLeft = Offset(col * squareSizePx, row * squareSizePx),
+                                size = Size(squareSizePx, squareSizePx)
+                            )
+
+                            // Highlight legal move squares
+                            if (legalMoves.contains(game.Position(row, col))) {
+                                drawRect(
+                                    color = highlightColor,
+                                    topLeft = Offset(col * squareSizePx, row * squareSizePx),
+                                    size = Size(squareSizePx, squareSizePx)
+                                )
+                            }
+                        }
+                    }
                 }
 
-                pieces.forEach { piece ->
+                game.pieces.forEach { piece ->
                     if (piece != draggedPiece) {
                         ChessPieceView(
                             piece = piece,
@@ -147,37 +144,9 @@ fun ChessBoard() {
     }
 }
 
-val lightSquare = Color(0xFFABB2B9)
-val darkSquare = Color(0xFF2C3E50)
-val highlightColor = Color(0x55F4D03F)
-
-fun DrawScope.drawChessBoard(boardSize: Int, squareSizePx: Float, legalMoves: Set<Position>) {
-    for (row in 0 until boardSize) {
-        for (col in 0 until boardSize) {
-            val isLight = (row + col) % 2 == 0
-            val color = if (isLight) lightSquare else darkSquare
-
-            drawRect(
-                color = color,
-                topLeft = Offset(col * squareSizePx, row * squareSizePx),
-                size = Size(squareSizePx, squareSizePx)
-            )
-
-            // Highlight legal move squares
-            if (legalMoves.contains(Position(row, col))) {
-                drawRect(
-                    color = highlightColor,
-                    topLeft = Offset(col * squareSizePx, row * squareSizePx),
-                    size = Size(squareSizePx, squareSizePx)
-                )
-            }
-        }
-    }
-}
-
 @Composable
 fun ChessPieceView(
-    piece: ChessPiece,
+    piece: Chess.Piece,
     squareSize: Dp,
     dragOffset: Offset? = null
 ) {
@@ -211,13 +180,13 @@ fun ChessPieceView(
     }
 }
 
-fun getPieceDrawableRes(piece: ChessPiece): DrawableResource {
+fun getPieceDrawableRes(piece: Chess.Piece): DrawableResource {
     return when (piece.type) {
-        PieceType.KING -> if (piece.color == PieceColor.WHITE ) Res.drawable.wk else Res.drawable.bk
-        PieceType.QUEEN -> if (piece.color == PieceColor.WHITE ) Res.drawable.wq else Res.drawable.bq
-        PieceType.BISHOP -> if (piece.color == PieceColor.WHITE ) Res.drawable.wb else Res.drawable.bb
-        PieceType.KNIGHT -> if (piece.color == PieceColor.WHITE ) Res.drawable.wn else Res.drawable.bn
-        PieceType.ROOK -> if (piece.color == PieceColor.WHITE ) Res.drawable.wr else Res.drawable.br
-        PieceType.PAWN -> if (piece.color == PieceColor.WHITE ) Res.drawable.wp else Res.drawable.bp
+        Chess.Type.KING -> if (piece.color == Chess.Color.WHITE ) Res.drawable.wk else Res.drawable.bk
+        Chess.Type.QUEEN -> if (piece.color == Chess.Color.WHITE ) Res.drawable.wq else Res.drawable.bq
+        Chess.Type.BISHOP -> if (piece.color == Chess.Color.WHITE ) Res.drawable.wb else Res.drawable.bb
+        Chess.Type.KNIGHT -> if (piece.color == Chess.Color.WHITE ) Res.drawable.wn else Res.drawable.bn
+        Chess.Type.ROOK -> if (piece.color == Chess.Color.WHITE ) Res.drawable.wr else Res.drawable.br
+        Chess.Type.PAWN -> if (piece.color == Chess.Color.WHITE ) Res.drawable.wp else Res.drawable.bp
     }
 }

@@ -19,5 +19,5 @@
       android:pathData="M270,1150v-99l62,-3 63,-3 22,-210c30,-287 33,-256 -37,-299l-60,-38 2,-161 3,-162 57,-3 58,-3v101h109l3,-47 3,-48h190l3,48 3,47h109v-101l57,3 58,3 3,163 2,162 -46,28c-25,15 -52,32 -60,37 -12,9 -11,39 6,215 11,113 23,220 26,238l5,32h129v200h-770z"
       android:strokeWidth="24"
       android:fillColor="#00000000"
-      android:strokeColor="#000"/>
+      android:strokeColor="#FFF"/>
 </vector>
